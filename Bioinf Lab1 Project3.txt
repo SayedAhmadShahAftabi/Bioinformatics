@@ -1,0 +1,69 @@
+import tkinter as tk
+from tkinter import filedialog, messagebox
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+WINDOW_SIZE = 30
+NUCLEOTIDES = ['A', 'C', 'G', 'T']
+
+def read_sequence(filepath):
+    with open(filepath, 'r') as f:
+        return ''.join(line.strip().upper() for line in f if line.strip())
+
+def calculate_frequencies(sequence, window_size):
+    freq_vectors = {nuc: [] for nuc in NUCLEOTIDES}
+    positions = []
+    for i in range(len(sequence) - window_size + 1):
+        window = sequence[i:i+window_size]
+        total = len(window)
+        counts = {nuc: window.count(nuc) for nuc in NUCLEOTIDES}
+        for nuc in NUCLEOTIDES:
+            freq_vectors[nuc].append(counts[nuc] / total if total > 0 else 0)
+        positions.append(i)
+    return positions, freq_vectors
+
+class PasteAnalyzerApp:
+    def __init__(self, root):
+        self.root = root
+        root.title("Paste Sequence Analyzer")
+        self.filepath = None
+
+        self.btn_select = tk.Button(root, text="Select Paste File", command=self.select_file)
+        self.btn_select.pack(pady=10)
+
+        self.btn_analyze = tk.Button(root, text="Analyze and Plot", command=self.analyze, state=tk.DISABLED)
+        self.btn_analyze.pack(pady=10)
+
+        self.figure = plt.Figure(figsize=(8, 4))
+        self.ax = self.figure.add_subplot(111)
+        self.canvas = FigureCanvasTkAgg(self.figure, master=root)
+        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+    def select_file(self):
+        self.filepath = filedialog.askopenfilename(title="Select Paste File", filetypes=(("Text files", "*.txt"), ("All files", "*.*")))
+        if self.filepath:
+            self.btn_analyze.config(state=tk.NORMAL)
+
+    def analyze(self):
+        try:
+            sequence = read_sequence(self.filepath)
+            if not sequence or any(c not in NUCLEOTIDES for c in sequence):
+                messagebox.showerror("Error", "File must contain only A/C/G/T characters.")
+                return
+
+            positions, freq_vectors = calculate_frequencies(sequence, WINDOW_SIZE)
+            self.ax.clear()
+            for nuc in NUCLEOTIDES:
+                self.ax.plot(positions, freq_vectors[nuc], label=nuc)
+            self.ax.set_title("Nucleotide Relative Frequencies (Sliding Window)")
+            self.ax.set_xlabel("Window Start Position")
+            self.ax.set_ylabel("Relative Frequency")
+            self.ax.legend()
+            self.canvas.draw()
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = PasteAnalyzerApp(root)
+    root.mainloop()

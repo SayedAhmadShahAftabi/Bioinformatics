@@ -1,0 +1,107 @@
+import itertools
+from collections import Counter
+
+# The sequence S provided by the user
+SEQUENCE = "ATTGTCCCAATTCGTTG"
+# BASES list is kept for documentation, although not strictly used for k-mer generation
+BASES = ['A', 'T', 'C', 'G'] 
+
+# --- Core Functions ---
+
+def calculate_kmer_frequencies(sequence: str, k: int) -> tuple[dict, int]:
+    """
+    Identifies all unique k-mers (nucleotide combinations of length k) 
+    that exist within the sequence S using a sliding window. 
+    It then calculates their absolute and relative frequencies.
+
+    This function bypasses the brute-force generation of all 4^k possible k-mers.
+    
+    Args:
+        sequence (str): The input DNA sequence (S).
+        k (int): The length of the k-mer (e.g., 2 for du-nucleotide, 3 for tri-nucleotide).
+
+    Returns:
+        tuple[dict, int]: A dictionary of results (k-mer -> frequency data) 
+                          and the total number of possible sliding windows.
+    """
+    total_length = len(sequence)
+    # The total number of possible windows (k-mer positions) in the sequence
+    total_windows = total_length - k + 1
+    
+    # 1. Count absolute occurrences using a sliding window (Only observed k-mers are stored)
+    observed_counts = Counter()
+    
+    if total_windows <= 0:
+        return {}, 0
+
+    # Slide the window from the start of the sequence
+    for i in range(total_windows):
+        kmer = sequence[i:i + k]
+        # This step verifies each combination starting from the beginning of S.
+        observed_counts[kmer] += 1
+        
+    # 2. Calculate relative frequency only for the observed (existing) k-mers
+    results = {}
+    
+    for kmer, count in observed_counts.items():
+        
+        # Calculate relative frequency: (Count / Total possible windows)
+        # Use 4 decimal places for precision
+        relative_frequency = count / total_windows
+        
+        results[kmer] = {
+            "absolute_frequency": count,
+            "relative_frequency": f"{relative_frequency:.4f}"
+        }
+        
+    return results, total_windows
+
+# --- Main Execution ---
+
+if __name__ == "__main__":
+    print(f"--- Observed K-mer Frequency Analysis ---")
+    print(f"Sequence S: {SEQUENCE}")
+    print(f"Sequence Length: {len(SEQUENCE)}\n")
+
+    # 1. Du-nucleotides (k=2)
+    K_DU = 2
+    # Directly analyze the sequence for existing du-nucleotides
+    du_results, du_windows = calculate_kmer_frequencies(SEQUENCE, K_DU)
+
+    print(f"--- OBSERVED DU-NUCLEOTIDES ({K_DU}-mers) ---")
+    print(f"Total observed unique du-nucleotides: {len(du_results)}")
+    print(f"Total possible sequence windows: {du_windows}\n")
+    
+    # Sort results by absolute frequency (descending)
+    sorted_du_results = sorted(
+        du_results.items(), 
+        key=lambda item: item[1]['absolute_frequency'], 
+        reverse=True
+    )
+    
+    print(f"{'K-mer':<8} | {'Abs Freq':<10} | {'Rel Freq':<10}")
+    print("-" * 33)
+    for kmer, data in sorted_du_results:
+        print(f"{kmer:<8} | {data['absolute_frequency']:<10} | {data['relative_frequency']:<10}")
+    print("\n" + "="*33 + "\n")
+
+    # 2. Tri-nucleotides (k=3)
+    K_TRI = 3
+    # Directly analyze the sequence for existing tri-nucleotides
+    tri_results, tri_windows = calculate_kmer_frequencies(SEQUENCE, K_TRI)
+    
+    print(f"--- OBSERVED TRI-NUCLEOTIDES ({K_TRI}-mers) ---")
+    print(f"Total observed unique tri-nucleotides: {len(tri_results)}")
+    print(f"Total possible sequence windows: {tri_windows}\n")
+
+    # Sort results by absolute frequency (descending)
+    sorted_tri_results = sorted(
+        tri_results.items(), 
+        key=lambda item: item[1]['absolute_frequency'], 
+        reverse=True
+    )
+    
+    print(f"{'K-mer':<8} | {'Abs Freq':<10} | {'Rel Freq':<10}")
+    print("-" * 33)
+    for kmer, data in sorted_tri_results:
+        print(f"{kmer:<8} | {data['absolute_frequency']:<10} | {data['relative_frequency']:<10}")
